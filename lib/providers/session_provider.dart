@@ -1,48 +1,51 @@
-// lib/providers/session_provider.dart
+// @path: lib/providers/session_provider.dart
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../api/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// Se cambió la importación relativa por una de paquete:
+import 'package:wa_mi_flutter/api/api_service.dart';
 
-enum SessionStateStatus { loading, awaitingScan, authenticated, error }
+enum SessionStatus { loading, awaitingScan, authenticated, error }
 
 class SessionState {
-  final SessionStateStatus status;
+  final SessionStatus status;
   final String? qr;
   final String? message;
   final String? sessionId;
-
   SessionState._({
     required this.status,
     this.qr,
     this.message,
     this.sessionId,
   });
-
-  factory SessionState.loading() =>
-      SessionState._(status: SessionStateStatus.loading);
-
-  factory SessionState.awaitingScan(String? qr, String sessionId) =>
-      SessionState._(
-        status: SessionStateStatus.awaitingScan,
-        qr: qr,
-        sessionId: sessionId,
-      );
-
-  factory SessionState.authenticated(String sessionId) =>
-      SessionState._(
-        status: SessionStateStatus.authenticated,
-        sessionId: sessionId,
-      );
-
-  factory SessionState.error(String message) =>
-      SessionState._(status: SessionStateStatus.error, message: message);
+  factory SessionState.loading() => SessionState._(status: SessionStatus.loading);
+  factory SessionState.awaitingScan(String? qr, String id) =>
+      SessionState._(status: SessionStatus.awaitingScan, qr: qr, sessionId: id);
+  factory SessionState.authenticated(String id) =>
+      SessionState._(status: SessionStatus.authenticated, sessionId: id);
+  factory SessionState.error(String msg) =>
+      SessionState._(status: SessionStatus.error, message: msg);
 }
+
+final apiProvider = Provider((ref) => ApiService());
 
 class SessionController extends StateNotifier<SessionState> {
   final ApiService _api;
-  Timer? _pollTimer;
-
+  Timer? _poll;
   SessionController(this._api) : super(SessionState.loading()) {
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString('sessionId');
+    if (stored != null) {
+      final status = await _api.getStatus(stored);
+      if (status.connected) {
+        state = SessionState.authenticated(stored);
+        return;
+      }
+    }
     start();
   }
 
@@ -51,42 +54,43 @@ class SessionController extends StateNotifier<SessionState> {
     try {
       final id = await _api.createSession();
       state = SessionState.awaitingScan(null, id);
-      _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-        final status = await _api.getStatus(id);
-        if (status.connected) {
-          _pollTimer?.cancel();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('sessionId', id);
+      _poll?.cancel();
+      _poll = Timer.periodic(const Duration(seconds: 3), (_) async {
+        final st = await _api.getStatus(id);
+        if (st.connected) {
+          _poll?.cancel();
           state = SessionState.authenticated(id);
         } else {
-          state = SessionState.awaitingScan(status.qr, id);
+          state = SessionState.awaitingScan(st.qr, id);
         }
       });
-    } catch (e) {
+    } catch (_) {
       state = SessionState.error('No se pudo crear sesión');
     }
   }
 
   Future<void> loginWithId(String id) async {
-    try {
-      final status = await _api.getStatus(id);
-      if (status.connected) {
-        _pollTimer?.cancel();
-        state = SessionState.authenticated(id);
-      } else {
-        state = SessionState.error('ID inválido o desconectado');
-      }
-    } catch (e) {
-      state = SessionState.error('Error al verificar ID');
+    final st = await _api.getStatus(id);
+    if (st.connected) {
+      _poll?.cancel();
+      state = SessionState.authenticated(id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('sessionId', id);
+    } else {
+      state = SessionState.error('ID inválido o desconectado');
     }
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
+  Future<void> logout() async {
+    _poll?.cancel();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('sessionId');
+    state = SessionState.loading();
+    start();
   }
 }
-
-final apiProvider = Provider((ref) => ApiService());
 
 final sessionProvider =
     StateNotifierProvider<SessionController, SessionState>(

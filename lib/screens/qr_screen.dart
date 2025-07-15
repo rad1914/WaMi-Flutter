@@ -1,4 +1,3 @@
-// lib/screens/qr_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,14 +5,14 @@ import '../providers/session_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class QRScreen extends ConsumerWidget {
-  const QRScreen({Key? key}) : super(key: key);
+  const QRScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
 
     ref.listen<SessionState>(sessionProvider, (prev, next) {
-      if (next.status == SessionStateStatus.authenticated) {
+      if (next.status == SessionStatus.authenticated) {
         context.go('/chats');
       }
     });
@@ -22,8 +21,8 @@ class QRScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('WaMi - Scan QR')),
       body: Center(
         child: switch (session.status) {
-          SessionStateStatus.loading => const CircularProgressIndicator(),
-          SessionStateStatus.awaitingScan => Column(
+          SessionStatus.loading => const CircularProgressIndicator(),
+          SessionStatus.awaitingScan => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (session.qr != null)
@@ -42,7 +41,7 @@ class QRScreen extends ConsumerWidget {
                 onPressed: () async {
                   final id = await showDialog<String>(
                     context: context,
-                    builder: (ctx) => _SessionIdDialog(),
+                    builder: (_) => _SessionIdDialog(),
                   );
                   if (id != null) {
                     ref.read(sessionProvider.notifier).loginWithId(id);
@@ -52,7 +51,7 @@ class QRScreen extends ConsumerWidget {
               ),
             ],
           ),
-          SessionStateStatus.error => Column(
+          SessionStatus.error => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(

@@ -1,21 +1,23 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
+    id "com.android.application"
+    id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
     namespace = "com.example.wa_mi_flutter"
-    compileSdk = flutter.compileSdkVersion
+    // flutter.compileSdkVersion is now deprecated.
+    // Use compileSdk = 34 or the latest version available.
+    compileSdk = 34
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = '1.8'
     }
 
     defaultConfig {
@@ -40,4 +42,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // No changes needed here usually, but ensure you don't have conflicting libraries.
 }

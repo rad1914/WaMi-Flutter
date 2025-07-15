@@ -1,8 +1,9 @@
-// lib/api/api_service.dart
+// @path: lib/api/api_service.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../models/chat.dart';
-import '../models/message.dart';
+// Se cambiaron las rutas relativas por rutas de paquete
+import 'package:wa_mi_flutter/models/chat.dart';
+import 'package:wa_mi_flutter/models/message.dart';
 
 class ApiService {
   final Dio _dio = Dio(BaseOptions(
@@ -10,7 +11,6 @@ class ApiService {
     connectTimeout: const Duration(seconds: 20),
     receiveTimeout: const Duration(seconds: 20),
   ));
-
   Future<String> createSession() async {
     final resp = await _dio.post('/session/create');
     return resp.data['sessionId'] as String;
@@ -60,9 +60,7 @@ class ApiService {
 class StatusResponse {
   final bool connected;
   final String? qr;
-
   const StatusResponse({required this.connected, this.qr});
-
   factory StatusResponse.fromJson(Map<String, dynamic> json) =>
       StatusResponse(
         connected: json['connected'] as bool,

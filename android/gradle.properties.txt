@@ -20,7 +20,7 @@ kotlin.caching.enabled=true
 kotlin.daemon.jvm.options=-Xmx2048m
 
 # — Android Specific —
-android.useAndroidX=true
+android.useAndroidX=false
 android.enableJetifier=false
 android.suppressUnsupportedCompileSdk=34
 # android.aapt2FromMavenOverride=/data/data/com.termux/files/usr/bin/aapt2

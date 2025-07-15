@@ -1,4 +1,3 @@
-// lib/router.dart
 import 'package:go_router/go_router.dart';
 import 'screens/qr_screen.dart';
 import 'screens/chat_screen.dart';
@@ -12,7 +11,7 @@ final router = GoRouter(
     GoRoute(
       path: '/chat/:jid',
       builder: (context, state) {
-        final jid = state.params['jid']!;
+        final jid = state.pathParameters['jid']!;
         return MessageScreen(jid: jid);
       },
     ),
